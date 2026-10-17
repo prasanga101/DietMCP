@@ -127,3 +127,14 @@ def test_frozen_baseline_preserves_completed_history():
     d = day_summary(date(2026,10,10), [{'calories_kcal': 2000}], [], status, 3000)
     assert d['baseline_kcal'] == 2500
     assert d['deficit_kcal'] == 500
+
+
+def test_configured_oauth_provider_starts():
+    from pydantic import SecretStr
+    from fitness_mcp.auth import build_auth
+    from fitness_mcp.app import create_server
+    cfg = SimpleNamespace(github_owner_id='123', github_client_id='test-client',
+                          github_client_secret=SecretStr('test-only-client-secret'), public_url='https://example.com')
+    with patch('fitness_mcp.state.PrivateState'):
+        auth = build_auth(cfg)
+        assert create_server(auth).http_app() is not None

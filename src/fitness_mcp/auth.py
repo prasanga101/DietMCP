@@ -27,6 +27,6 @@ def build_auth(cfg):
         upstream_client_id=cfg.github_client_id,
         upstream_client_secret=cfg.github_client_secret.get_secret_value(),
         token_verifier=OwnerVerifier(cfg.github_owner_id),
-        base_url=cfg.public_url.rstrip('/'), required_scopes=['read:user'],
+        base_url=cfg.public_url.rstrip('/'), valid_scopes=['read:user'],
         jwt_signing_key=cfg.github_client_secret.get_secret_value(),
         require_authorization_consent=True)
