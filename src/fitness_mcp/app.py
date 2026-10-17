@@ -146,10 +146,13 @@ def create_server(auth=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['serve', 'check', 'test', 'report', 'send', 'worker'])
+    parser.add_argument('command', choices=['serve', 'check', 'test', 'report', 'send', 'worker', 'doctor'])
     parser.add_argument('--start', type=date.fromisoformat)
     parser.add_argument('--output', type=Path, default=Path('weekly-report.pdf'))
     args = parser.parse_args()
+    if args.command == 'doctor':
+        from .diagnostics import doctor
+        raise SystemExit(doctor())
     try:
         cfg = settings()
         cfg.data_dir.mkdir(parents=True, exist_ok=True, mode=0o700)

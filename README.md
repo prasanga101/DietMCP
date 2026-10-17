@@ -44,6 +44,7 @@ Profile values belong in `.env` as shown in the example. The default baseline is
 
 ```sh
 uv sync
+uv run fitness doctor
 uv run fitness check
 uv run fitness test
 uv run pytest
