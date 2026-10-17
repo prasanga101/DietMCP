@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     target_weight_kg: float = Field( gt=0, le=500)
     sex: Literal['male', 'female']
     baseline_multiplier: float = Field(default=1.2, ge=1, le=2)
+    state_backend: Literal['supabase', 'sqlite'] = 'supabase'
+    state_encryption_key: SecretStr = SecretStr('')
     data_dir: Path = ROOT / '.private'
     resend_api_key: SecretStr = SecretStr('')
     email_from: str = ''

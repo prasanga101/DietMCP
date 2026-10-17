@@ -1,0 +1,45 @@
+name: Weekly PDF email
+on:
+  schedule:
+    # Friday 10:15 UTC = Friday 16:00 Asia/Kathmandu (delivery can be delayed by GitHub).
+    - cron: '15 10 * * 5'
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: 'Optional report start date YYYY-MM-DD; blank selects last Friday report period'
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: weekly-pdf-email
+  cancel-in-progress: false
+jobs:
+  send:
+    if: vars.WEEKLY_EMAIL_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVER_KEY: ${{ secrets.SUPABASE_SERVER_KEY }}
+      OWNER_USER_ID: ${{ secrets.OWNER_USER_ID }}
+      STATE_ENCRYPTION_KEY: ${{ secrets.STATE_ENCRYPTION_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+      BIRTH_DATE: ${{ secrets.BIRTH_DATE }}
+      HEIGHT_CM: ${{ secrets.HEIGHT_CM }}
+      WEIGHT_KG: ${{ secrets.WEIGHT_KG }}
+      TARGET_WEIGHT_KG: ${{ secrets.TARGET_WEIGHT_KG }}
+      SEX: ${{ secrets.SEX }}
+      TIMEZONE: Asia/Kathmandu
+      STATE_BACKEND: supabase
+      REPORT_START: ${{ inputs.start_date }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.1'
+      - run: uv sync --locked --no-dev --python 3.13
+      - name: Generate and send the weekly PDF
+        run: uv run --no-sync fitness scheduled-send

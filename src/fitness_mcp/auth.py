@@ -19,7 +19,9 @@ def build_auth(cfg):
         raise ValueError('Configure GitHub OAuth credentials and owner numeric ID locally before hosting.')
     if not cfg.public_url.startswith('https://'):
         raise ValueError('PUBLIC_URL must be your public HTTPS origin.')
+    from .state import SupabaseOAuthStore
     return OAuthProxy(
+        client_storage=SupabaseOAuthStore(),
         upstream_authorization_endpoint='https://github.com/login/oauth/authorize',
         upstream_token_endpoint='https://github.com/login/oauth/access_token',
         upstream_client_id=cfg.github_client_id,

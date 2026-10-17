@@ -1,63 +1,23 @@
-# REVIEW COST BEFORE DEPLOYING: always-on paid service with persistent disk.
+# No card required for this free compute configuration, subject to Render account limits.
+# Add private application values in Render Environment after the host is created.
+# Weekly PDF emails run independently via GitHub Actions.
 services:
   - type: web
     name: dietmcp
     runtime: python
-    plan: 0.5c-512mb
+    plan: free
     numInstances: 1
     buildCommand: pip install uv && uv sync --frozen --no-dev
     startCommand: .venv/bin/fitness serve
     healthCheckPath: /health
-    disk:
-      name: dietmcp-private
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.11
       - key: DATA_DIR
-        value: /var/data
-      - key: FASTMCP_HOME
-        value: /var/data/fastmcp
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVER_KEY
-        sync: false
-      - key: OWNER_USER_ID
-        sync: false
-      - key: PUBLIC_URL
-        sync: false
-      - key: GITHUB_CLIENT_ID
-        sync: false
-      - key: GITHUB_CLIENT_SECRET
-        sync: false
-      - key: GITHUB_OWNER_ID
-        sync: false
-      - key: RESEND_API_KEY
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
-      - key: EMAIL_TO
-        sync: false
+        value: /tmp/dietmcp
+      - key: STATE_BACKEND
+        value: supabase
       - key: TIMEZONE
         value: Asia/Kathmandu
-      - key: REPORT_WEEKDAY
-        value: '4'
-      - key: REPORT_HOUR
-        value: '16'
-      - key: REPORT_MINUTE
-        value: '0'
       - key: WEEKLY_EMAIL_ENABLED
         value: 'false'
-      - key: BIRTH_DATE
-        sync: false
-      - key: HEIGHT_CM
-        sync: false
-      - key: WEIGHT_KG
-        sync: false
-      - key: TARGET_WEIGHT_KG
-        sync: false
-      - key: SEX
-        sync: false
-      - key: BASELINE_MULTIPLIER
-        value: '1.2'

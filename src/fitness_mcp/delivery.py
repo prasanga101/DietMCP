@@ -17,6 +17,12 @@ def send_week(start: date, *, scheduled=False, now=None):
 
 
 def _send_week(start: date, *, scheduled=False, now=None):
+    if getattr(settings(), 'state_backend', 'sqlite') == 'supabase':
+        return send_week_cloud(start, now=now)
+    return send_week_sqlite(start, now=now)
+
+
+def send_week_sqlite(start: date, *, now=None):
     cfg = settings()
     if not cfg.email_to or not cfg.email_from or not cfg.resend_api_key.get_secret_value():
         raise ValueError('Configure EMAIL_TO, EMAIL_FROM and RESEND_API_KEY locally.')
@@ -86,3 +92,45 @@ def scheduler():
                 logging.error('Weekly delivery failed; check configuration and provider dashboard. Retrying in five minutes.')
                 time.sleep(240)
         time.sleep(60)
+
+
+def send_week_cloud(start: date, *, now=None):
+    from .state import PrivateState
+    cfg = settings()
+    if not cfg.email_to or not cfg.email_from or not cfg.resend_api_key.get_secret_value():
+        raise ValueError('Configure the private email sender and recipient.')
+    now = now or datetime.now(ZoneInfo(cfg.timezone))
+    if start + timedelta(days=6) >= now.date():
+        raise ValueError('Report must end before today.')
+    state = PrivateState()
+    key = hashlib.sha256(f'{cfg.owner_user_id}/{start}/{cfg.email_to}'.encode()).hexdigest()
+    saved = state.get('deliveries', key)
+    if saved is None:
+        report = get_week(Store(), start, lambda day: profile_for(day)['baseline_kcal'])
+        payload = {'from': cfg.email_from, 'to': [cfg.email_to],
+                   'subject': f"Your weekly diet report: {report['start']} to {report['end']}",
+                   'text': f"Your PDF is attached. Complete days: {report['complete_days']}/7. Missing logs and estimates are labelled.",
+                   'attachments': [{'filename': f'diet-week-{start}.pdf',
+                                    'content': base64.b64encode(pdf_bytes(report, cfg.timezone)).decode()}]}
+        state.put('deliveries', key, {'created': now.timestamp(), 'status': 'pending', 'payload': payload}, only_if_absent=True)
+        saved = state.get('deliveries', key)
+        if saved is None:
+            raise ValueError('Delivery state was not persisted; refusing to send.')
+    if saved['status'] == 'accepted':
+        return {'status': 'already_accepted', 'provider_id': saved['provider_id']}
+    if now.timestamp() - saved['created'] > 23*3600:
+        raise ValueError('Uncertain send is outside safe retry window; review provider history.')
+    response = httpx.post('https://api.resend.com/emails', json=saved['payload'],
+                          headers={'Authorization': f'Bearer {cfg.resend_api_key.get_secret_value()}',
+                                   'Idempotency-Key': key}, timeout=30)
+    if not response.is_success:
+        raise ValueError('Provider rejected delivery; check provider dashboard.')
+    provider_id = response.json()['id']
+    state.put('deliveries', key, {**saved, 'status': 'accepted', 'provider_id': provider_id})
+    return {'status': 'accepted_by_provider', 'provider_id': provider_id}
+
+
+def scheduled_start(today, weekday=4):
+    """Latest scheduled local date, minus seven full days; stable across delayed retries."""
+    latest = today - timedelta(days=(today.weekday() - weekday) % 7)
+    return latest - timedelta(days=7)

@@ -146,25 +146,22 @@ def create_server(auth=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['serve', 'check', 'test', 'report', 'send', 'worker', 'doctor'])
+    parser.add_argument('command', choices=['serve', 'check', 'test', 'report', 'send', 'worker', 'doctor', 'scheduled-send'])
     parser.add_argument('--start', type=date.fromisoformat)
     parser.add_argument('--output', type=Path, default=Path('weekly-report.pdf'))
     args = parser.parse_args()
     if args.command == 'doctor':
         from .diagnostics import doctor
         raise SystemExit(doctor())
+    if args.command == 'serve':
+        from .hosting import run_host
+        run_host()
+        return
     try:
         cfg = settings()
         cfg.data_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         os.chmod(cfg.data_dir, 0o700)
-        if args.command == 'serve':
-            server = create_server(build_auth(cfg))
-            if cfg.weekly_email_enabled:
-                from .delivery import scheduler
-                logging.basicConfig(level=logging.INFO)
-                Thread(target=scheduler, name='weekly-email', daemon=True).start()
-            server.run(transport='http', host='0.0.0.0', port=int(os.getenv('PORT', '8000')))
-        elif args.command == 'worker':
+        if args.command == 'worker':
             from .delivery import scheduler
             logging.basicConfig(level=logging.INFO)
             scheduler()
@@ -192,6 +189,11 @@ def main():
             if store.db.table('food_logs').select('id').eq('user_id', store.owner).eq('id', row['id']).execute().data:
                 raise ValueError('Test cleanup failed')
             print('Owner-scoped insert/read/cleanup passed.')
+        elif args.command == 'scheduled-send':
+            from .delivery import send_week, scheduled_start
+            requested = os.getenv('REPORT_START', '')
+            start = date.fromisoformat(requested) if requested else scheduled_start(current_date(), cfg.report_weekday)
+            print(send_week(start)['status'])
         else:
             start = args.start or current_date() - timedelta(days=7)
             if args.command == 'send':
@@ -203,3 +205,7 @@ def main():
     except Exception:
         print('Operation failed. Check private configuration, database schema and provider dashboard. No credentials shown.', file=__import__('sys').stderr)
         raise SystemExit(1) from None
+
+
+if __name__ == '__main__':
+    main()

@@ -3,7 +3,7 @@ import os
 from .config import settings
 
 REQUIRED = {
-    'Database': ['SUPABASE_URL', 'SUPABASE_SERVER_KEY', 'OWNER_USER_ID'],
+    'Database': ['SUPABASE_URL', 'SUPABASE_SERVER_KEY', 'OWNER_USER_ID', 'STATE_ENCRYPTION_KEY'],
     'ChatGPT connection': ['PUBLIC_URL', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'GITHUB_OWNER_ID'],
     'Email': ['RESEND_API_KEY', 'EMAIL_FROM', 'EMAIL_TO'],
     'Profile': ['BIRTH_DATE', 'HEIGHT_CM', 'WEIGHT_KG', 'TARGET_WEIGHT_KG', 'SEX'],
