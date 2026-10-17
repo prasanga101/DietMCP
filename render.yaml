@@ -11,6 +11,8 @@ services:
     startCommand: .venv/bin/fitness serve
     healthCheckPath: /health
     envVars:
+      - key: MCP_AUTH_ENABLED
+        value: 'false'
       - key: PYTHON_VERSION
         value: 3.13.11
       - key: DATA_DIR

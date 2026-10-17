@@ -138,3 +138,16 @@ def test_configured_oauth_provider_starts():
     with patch('fitness_mcp.state.PrivateState'):
         auth = build_auth(cfg)
         assert create_server(auth).http_app() is not None
+
+
+def test_hosted_no_auth_mode_initializes_without_oauth_credentials():
+    from starlette.testclient import TestClient
+    from fitness_mcp.hosting import configured_server
+    server = configured_server(SimpleNamespace(mcp_auth_enabled=False))
+    with TestClient(server.http_app()) as client:
+        response = client.post('/mcp', headers={'Accept': 'application/json, text/event-stream'},
+                               json={'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',
+                                     'params': {'protocolVersion': '2025-03-26', 'capabilities': {},
+                                                'clientInfo': {'name': 'no-auth-test', 'version': '1'}}})
+        assert response.status_code == 200
+        assert 'www-authenticate' not in response.headers

@@ -13,6 +13,8 @@ REQUIRED = {
 def doctor():
     missing = False
     for group, keys in REQUIRED.items():
+        if group == 'ChatGPT connection' and os.getenv('MCP_AUTH_ENABLED', 'false').lower() not in ('true', '1', 'yes'):
+            keys = ['PUBLIC_URL']
         absent = []
         for key in keys:
             value = os.getenv(key, '')

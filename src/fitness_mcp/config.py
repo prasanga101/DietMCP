@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     supabase_server_key: SecretStr
     owner_user_id: UUID
     public_url: str = 'http://localhost:8000'
+    mcp_auth_enabled: bool = False
     github_client_id: str = ''
     github_client_secret: SecretStr = SecretStr('')
     github_owner_id: str = ''

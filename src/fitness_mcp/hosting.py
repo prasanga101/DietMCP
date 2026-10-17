@@ -7,13 +7,19 @@ from starlette.routing import Route
 from .config import settings
 
 
-def run_host():
+def configured_server(cfg):
     from .app import create_server
-    from .auth import build_auth
+    if cfg.mcp_auth_enabled:
+        from .auth import build_auth
+        return create_server(build_auth(cfg))
+    return create_server()
+
+
+def run_host():
     from threading import Thread
     try:
         cfg = settings()
-        server = create_server(build_auth(cfg))
+        server = configured_server(cfg)
     except Exception:
         print('DietMCP host is running; private configuration is incomplete. MCP tools are unavailable until configured.', flush=True)
         async def health(request):

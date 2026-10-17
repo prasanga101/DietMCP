@@ -8,12 +8,12 @@ A personal diet and activity tracker: ChatGPT tools save dated logs to Supabase,
 - Intake, protein, additional exercise burn, estimated TDEE, daily deficit, weekly deficit and estimated weight-loss equivalent.
 - Two-page PDF with daily intake/TDEE bars, cumulative deficit chart and daily detail table.
 - Age calculated from a privately configured birth date. Height, current weight, sex and target remain private.
-- Owner-restricted GitHub OAuth for the remote MCP; server-side Supabase access requires no repeated database login.
+- Remote MCP with authentication disabled as configured by the owner. Supabase credentials remain server-side.
 
 ## Free hosting design
 
 - **Render Free** hosts the MCP at `/mcp` over HTTPS.
-- **Supabase** stores fitness logs, encrypted OAuth state and the delivery ledger.
+- **Supabase** stores fitness logs and the encrypted delivery ledger; optional OAuth state is also persisted there.
 - **GitHub Actions** runs the weekly PDF/email job independently of Render.
 - **Resend** sends the PDF attachment over HTTPS; configure an approved sender and stay within your account's free allowance.
 
@@ -32,8 +32,9 @@ Only `.env.example` belongs in Git. Keep your actual `.env`, reports, sessions, 
 | `OWNER_USER_ID` | UUID of your existing Supabase Auth user |
 | `STATE_ENCRYPTION_KEY` | Stable Fernet key for encrypted OAuth and delivery state |
 | `PUBLIC_URL` | Assigned Render HTTPS origin |
-| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Your GitHub OAuth app credentials |
-| `GITHUB_OWNER_ID` | Numeric GitHub user ID allowed to connect |
+| `MCP_AUTH_ENABLED` | `false` for the current no-authentication deployment |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Optional OAuth credentials when authentication is enabled |
+| `GITHUB_OWNER_ID` | Owner identity for optional OAuth mode |
 | `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_TO` | Private email sender configuration |
 | `BIRTH_DATE`, `HEIGHT_CM`, `WEIGHT_KG`, `TARGET_WEIGHT_KG`, `SEX` | Private profile inputs |
 
@@ -46,7 +47,7 @@ Default timezone is Asia/Kathmandu. The workflow is scheduled Friday at 10:15 UT
 3. Run `uv sync`, `uv run fitness doctor`, `uv run fitness check`, `uv run fitness test`, then `uv run pytest`.
 4. Create a Render Blueprint from `render.yaml`. It uses the free plan. Initially, the host can run in setup mode: `/health` reports `configuration_required`, and `/mcp` rejects calls until private configuration is complete. A live host URL does not mean the MCP is ready.
 5. Add application variables in Render's Environment section. Use `/tmp/dietmcp` for `DATA_DIR`, `supabase` for `STATE_BACKEND`, and keep `WEEKLY_EMAIL_ENABLED=false` on Render. That last flag disables the in-process scheduler; GitHub supplies the schedule instead.
-6. Register a GitHub OAuth app with your Render origin as Homepage and `PUBLIC_URL/auth/callback` as callback. Add its client credentials and your numeric GitHub owner ID to Render. All other GitHub identities are denied.
+6. Keep `MCP_AUTH_ENABLED=false`. Choose **No authentication** when adding this server in ChatGPT. OAuth app credentials are not used in this mode.
 7. Set the same database, encryption, email and profile variables as **GitHub Actions secrets**, not ordinary public repository variables. OAuth client credentials are not needed by the email workflow. Set repository variable `WEEKLY_EMAIL_ENABLED=true` only after configuration.
 8. Run **Actions → Weekly PDF email → Run workflow** for an immediate full-pipeline test. A blank start date selects the latest scheduled Friday's report period. The workflow never publishes the PDF as a public artifact or prints health records. Verify provider delivery events and your inbox.
 
@@ -56,7 +57,7 @@ Default timezone is Asia/Kathmandu. The workflow is scheduled Friday at 10:15 UT
 
 [Official OpenAI connection instructions](https://developers.openai.com/api/docs/guides/custom-mcp-server).
 
-On ChatGPT web, add the HTTPS `/mcp` URL as a custom MCP plugin, choose OAuth and complete the one-time GitHub connection. Install and select the plugin in a chat. Availability depends on your ChatGPT plan/workspace and client. Hosting alone cannot guarantee native mobile support.
+On ChatGPT web, add the HTTPS `/mcp` URL as a custom MCP plugin and choose **No authentication**. Install and select the plugin in a chat. Availability depends on your ChatGPT plan/workspace and client. Hosting alone cannot guarantee native mobile support.
 
 The required final test is to select the installed plugin in the **iPhone ChatGPT app**, log an entry there, and verify that it appears in Supabase. If the iPhone app cannot select/use the connection, that requirement is still unmet. A successful desktop test is insufficient.
 
@@ -70,4 +71,4 @@ TDEE = configured baseline + additional net exercise burn. Avoid counting baseli
 
 Formula references: [Mifflin-St Jeor](https://ajcn.nutrition.org/article/S0002-9165(23)16698-6/abstract), [NIDDK Body Weight Planner](https://www.niddk.nih.gov/health-information/weight-management/body-weight-planner).
 
-All database operations are scoped to a fixed owner. The server key bypasses RLS and must never leave the backend. OAuth state and delivery payloads are encrypted before storage in the backend-only state table. Email retries reuse the exact payload and provider idempotency key. Uncertain sends older than 23 hours stop for manual review because provider idempotency retention is 24 hours. Keep one MCP instance and the serialized GitHub workflow. Local SQLite state and an in-process worker are optional for a persistent VPS; they are not used by the free deployment.
+All database operations are scoped to a fixed owner. With MCP authentication disabled, anyone who reaches the endpoint can use its tools to read or change that owner's tracker. The server key stays on the backend. OAuth state and delivery payloads are encrypted before storage in the backend-only state table. Email retries reuse the exact payload and provider idempotency key. Uncertain sends older than 23 hours stop for manual review because provider idempotency retention is 24 hours. Keep one MCP instance and the serialized GitHub workflow. Local SQLite state and an in-process worker are optional for a persistent VPS; they are not used by the free deployment.
