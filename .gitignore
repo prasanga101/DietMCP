@@ -1,0 +1,29 @@
+# Credentials and local overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+# Sessions, databases and health reports
+.private/
+*.sqlite*
+*.db
+*.pdf
+reports/
+# Python and tooling
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+.uv-cache/
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/

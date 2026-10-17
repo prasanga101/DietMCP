@@ -1,0 +1,15 @@
+[project]
+name = "fitness-mcp"
+version = "0.2.0"
+requires-python = ">=3.12"
+dependencies = ["fastmcp>=2,<4", "supabase>=2,<3", "python-dotenv>=1,<2", "pydantic-settings>=2,<3", "reportlab>=4,<5", "httpx>=0.28,<1"]
+
+[project.scripts]
+fitness = "fitness_mcp.app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pypdf>=5,<7"]

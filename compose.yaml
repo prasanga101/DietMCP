@@ -1,0 +1,27 @@
+services:
+  mcp:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - diet-data:/data
+    expose:
+      - '8000'
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DIET_DOMAIN: ${DIET_DOMAIN:?Set DIET_DOMAIN to your server hostname}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - mcp
+volumes:
+  diet-data:
+  caddy-data:
+  caddy-config:
